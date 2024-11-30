@@ -1,0 +1,246 @@
+##Install LDAP
+	sudo apt update  
+	sudo apt install slapd ldap-utils -y  
+	sudo apt install libnss-ldapd libpam-ldapd -y
+
+##Reconfigure ldap to confirm settings:
+command:sudo dpkg-reconfigure slapd  
+domain: rodriguez.com
+organization: rodriguez
+admin password: rodriguez
+
+
+###create base.ldif file to add users
+command: sudo nano base.ldif
+contents of base.ldif:
+dn:ou=Groups,dc=rodriguez,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: Groups  
+                                         
+dn: ou=People,dc=rodriguez,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: People  
+                                         
+dn: cn=Admins, ou=Groups,dc=rodriguez,dc=com
+objectClass: posixGroup
+cn: Admins
+gidNumber: 5000  
+                                    
+dn: cn=Teachers, ou=Groups, dc=rodriguez,dc=com
+objectClass: posixGroup
+cn: Teachers
+gidNumber: 5001   
+                                   
+dn: cn=Students, ou=Groups,dc=rodriguez,dc=com
+objectClass: posixGroup
+cn: Students
+gidNumber: 5002     
+
+add these groups using the command:
+sudo ldapadd -x -D "cn=admin,dc=rodriguez,dc=com" -W -f base.ldif
+
+###Add ldap users through user.ldif
+command: sudo nano users.ldif
+contents of file
+
+dn: uid=admin1,ou=Admins,dc=rodriguez,dc=com  
+objectClass: inetOrgPerson  
+objectClass: posixAccount  
+objectClass: shadowAccount  
+uid: admin1  
+sn: Admin  
+cn: Admin One  
+userPassword: adminPassword  
+uidNumber: 1000  
+gidNumber: 5000  
+homeDirectory: /home/admin1  
+loginShell: /bin/bash  
+
+dn: uid=teacher1,ou=Teachers,dc=rodriguez,dc=com  
+objectClass: inetOrgPerson  
+objectClass: posixAccount  
+objectClass: shadowAccount  
+uid: teacher1  
+sn: Teacher  
+cn: Teacher One  
+userPassword: teacherPassword  
+uidNumber: 1001  
+gidNumber: 5001  
+homeDirectory: /home/teacher1  
+loginShell: /bin/bash  
+
+dn: uid=student1,ou=Students,dc=rodriguez,dc=com  
+objectClass: inetOrgPerson  
+objectClass: posixAccount  
+objectClass: shadowAccount  
+uid: student1  
+sn: Student  
+cn: Student One  
+userPassword: studentPassword  
+uidNumber: 1002  
+gidNumber: 5002  
+homeDirectory: /home/student1  
+loginShell: /bin/bash  
+
+
+command to add users through ldif file: 
+sudo ldapadd -x -D "cn=admin,dc=rodriguez,dc=com" -W -f users.ldif  
+
+###Configure LDAP Client on Server
+Install Required Packages on the Desktop Client
+run the following commands to install the necessary packages:
+
+sudo apt update
+sudo apt install libnss-ldapd libpam-ldapd ldap-utils nslcd
+
+During the installation, you may be prompted to provide your LDAP URI and other configurations.
+You can configure these settings manually later if you prefer.
+
+Step 2: Configure LDAP Client
+1. Configure /etc/ldap/ldap.conf : Open and edit /etc/ldap/ldap.conf :
+sudo nano /etc/ldap/ldap.conf
+Set the following parameters:
+BASE dc=rodriguez,dc=com
+URI ldap://ldap.192.168.100.157.com
+Adjust the BASE and URI based on your specific setup.
+
+
+Configure /etc/nsswitch.conf : Make sure to modify /etc/nsswitch.conf to include LDAP for
+user and group lookups. Open the file:
+sudo nano /etc/nsswitch.conf
+Change the following lines:
+passwd: compat ldap
+group: compat ldap
+shadow: compat ldap
+
+Configure PAM for LDAP: Open the PAM configuration file for common-authentication:
+
+sudo nano /etc/pam.d/common-auth
+
+Add or ensure these lines are present (they might be added automatically by the libpam-ldap
+package):
+
+auth required pam_unix.so nullok_secure
+auth required pam_ldap.so
+
+You may also want to ensure /etc/pam.d/common-session contain similar lines for LDAP.: 
+
+session required pam_mkhomedir.so skel=/etc/skel umask=007
+
+Configure nslcd : If it's installed, edit /etc/nslcd.conf to ensure the server is reachable for authentication:
+
+sudo nano /etc/nslcd.conf
+
+# /etc/nslcd.conf 
+# nslcd configuration file. See nslcd.conf(5) 
+# for details.                      
+# The user and group nslcd should run as.     
+uid nslcd         
+gid nslcd                           
+# The location at which the LDAP server(s) should be reachable.                                                         
+uri ldap://192.168.100.157        
+# The search base that will be used for all queries.                                                                    
+base dc=rodriguez,dc=com          
+# The LDAP protocol version to use.          
+ldap_version 3                     
+# The DN to bind with for normal lookups.     
+#binddn cn=annonymous,dc=example,dc=net       
+#bindpw secret                      
+# The DN used for password modifications by root.                                                                       
+#rootpwmoddn cn=admin,dc=example,dc=com                         
+# SSL options     
+#ssl off          
+#tls_reqcert never                            
+tls_cacertfile /etc/ssl/certs/ca-certificates.crt               
+# The search scope.                           
+#scope sub                            
+
+Restart Services: Restart the necessary services for the changes to take effect:
+
+sudo systemctl restart nslcd
+
+###Try to Get LDAP User Info: Use the getent command to see if you can retrieve user information
+from LDAP:
+
+getent passwd
+getent group
+
+Test LDAP Authentication: If you have a user set up in your LDAP directory, try to log in with that
+user.
+
+LDAP Search: Optionally, you can also run an ldapsearch to query the LDAP server directly:
+
+ldapsearch -x -b "dc=rodriguez,dc=com"
+
+### NFS Setup for File Sharing
+
+Install NFS Server
+
+Command: 
+sudo apt install nfs-kernel-server -y  
+
+Configure NFS Exports
+Edited /etc/exports:
+
+/home/wildcatUsers/administrators *(rw,sync,no_subtree_check)  
+/home/wildcatUsers/teachers *(rw,sync,no_subtree_check)  
+/home/wildcatUsers/students *(rw,sync,no_subtree_check)  
+
+Commands:
+sudo exportfs -a  
+sudo systemctl restart nfs-kernel-server  
+
+Configure Client Machine for NFS
+Commands:
+
+    sudo apt install nfs-common  
+    sudo mkdir -p /home/wildcatUsers/administrators /home/wildcatUsers/teachers /home/wildcatUsers/students  
+    sudo mount -t nfs <server-ip>:/home/wildcatUsers/administrators /home/wildcatUsers/administrators  
+    sudo mount -t nfs <server-ip>:/home/wildcatUsers/teachers /home/wildcatUsers/teachers  
+    sudo mount -t nfs <server-ip>:/home/wildcatUsers/students /home/wildcatUsers/students  
+
+
+### Enable SSH Access
+Install OpenSSH server:
+
+Command: sudo apt install openssh-server
+
+Secure SSH: Edit the /etc/ssh/sshd_config file:
+Command: sudo nano /etc/ssh/sshd_config
+
+PermitRootLogin no
+PasswordAuthentication no
+
+Set up key-based authentication (optional) and then restart SSH:
+
+Command: sudo systemctl restart sshd
+
+### Set Up NTP Server
+Install NTP:
+
+Command: sudo apt install ntp
+
+2. Configure NTP by editing /etc/ntp.conf as required. You can add specific NTP
+time.google.com
+time1.google.com
+time2.google.com
+time3.google.com
+time4.google.com
+
+### Install Joe Editor:
+Command: sudo apt install joe
+
+Step 4: Install and Configure UFW Firewall
+
+### Install UFW:
+
+sudo apt install ufw
+Set up rules:
+sudo ufw allow OpenSSH
+sudo ufw allow from <client-ip> to any port nfs
+
+Enable UFW:
+
+sudo ufw enable

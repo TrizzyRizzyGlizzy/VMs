@@ -1,0 +1,976 @@
+####Step 1: Install and Verify Apache Web Server
+
+    Install Apache:
+
+sudo apt-get update  
+sudo apt-get install apache2 -y
+
+Allow HTTP and HTTPS Through Firewall:
+
+sudo ufw allow http  
+sudo ufw allow https  
+sudo ufw enable
+
+Enable Apache to Start on Boot:
+
+sudo systemctl enable apache2  
+
+Start Apache Service:
+
+sudo systemctl start apache2  
+
+Verify Apache Status:
+
+sudo systemctl status apache2  
+
+    Ensure the status shows as "active (running)".
+
+Test Functionality:
+
+    Open a web browser and navigate to http://<your-server-IP>.
+    Confirm that the default Apache landing page is displayed.
+
+Step 2: Disable Directory Listing
+
+    Edit Apache Configuration File:
+
+sudo nano /etc/apache2/apache2.conf
+
+Locate Directory Configuration Block:
+
+    Look for lines similar to:
+
+    <Directory /var/www/>
+        Options Indexes FollowSymLinks
+        AllowOverride None
+        Require all granted
+    </Directory>
+
+Disable Directory Listing:
+
+    Modify the Options line to remove Indexes:
+
+    Options FollowSymLinks
+
+Save and Exit:
+
+    Press CTRL+O to save, CTRL+X to exit the editor.
+
+Restart Apache Service:
+
+sudo systemctl restart apache2  
+
+Test Directory Listing:
+
+    Navigate to a directory without an index file. Confirm the browser shows a "403 Forbidden" error instead of listing files.
+
+Step 3: Implement SSL/TLS Encryption
+
+    Install OpenSSL:
+
+sudo apt-get install openssl -y  
+
+Generate a Self-Signed SSL Certificate (Optional: Use Let’s Encrypt if available):
+
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/apache-selfsigned.key -out /etc/ssl/certs/apache-selfsigned.crt
+
+    Fill out the prompted details.
+
+Configure Apache for SSL:
+
+    Enable SSL module:
+
+sudo a2enmod ssl  
+
+Create a new SSL configuration file:
+
+sudo nano /etc/apache2/sites-available/default-ssl.conf  
+
+Add or modify the following content:
+
+    <VirtualHost *:443>
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+
+        SSLEngine on
+        SSLCertificateFile /etc/ssl/certs/apache-selfsigned.crt
+        SSLCertificateKeyFile /etc/ssl/private/apache-selfsigned.key
+
+        <Directory /var/www/html>
+            Options FollowSymLinks
+            AllowOverride None
+            Require all granted
+        </Directory>
+    </VirtualHost>
+
+Redirect HTTP to HTTPS:
+
+    Edit the default Apache configuration file:
+
+sudo nano /etc/apache2/sites-available/000-default.conf  
+
+Add the following redirect rule:
+
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+Enable and Test Configurations:
+
+    Enable the SSL site:
+
+    sudo a2ensite default-ssl  
+    sudo systemctl reload apache2  
+
+Restart Apache Service:
+
+sudo systemctl restart apache2  
+
+Step 4: Test Secure HTTPS Functionality
+
+    Access the Server via HTTPS:
+        Open a browser and navigate to https://<your-server-IP>.
+        Accept the self-signed certificate warning if it appears.
+
+    Verify SSL/TLS Encryption:
+        Confirm the browser displays a padlock icon indicating a secure connection.
+
+    Document Results:
+        Capture screenshots of the HTTPS padlock and test results.
+        Verify the HTTP to HTTPS redirection works by navigating to http://<your-server-IP> and confirming it redirects to HTTPS.
+
+
+Step 1: Install MySQL and Validate Installation
+
+    Install MySQL Server:
+
+sudo apt update  
+sudo apt install mysql-server -y  
+
+Enable MySQL to Start on Boot:
+
+sudo systemctl enable mysql  
+
+Start MySQL Service:
+
+sudo systemctl start mysql  
+
+Verify MySQL Service Status:
+
+sudo systemctl status mysql  
+
+    Ensure the status shows "active (running)".
+
+Log into MySQL Prompt:
+
+sudo mysql  
+
+    Run a basic query to confirm functionality:
+
+SELECT VERSION();
+
+Exit the MySQL prompt:
+
+        EXIT;
+
+Step 2: Secure the Installation
+
+    Run the MySQL Secure Installation Script:
+
+    sudo mysql_secure_installation  
+
+        Follow the prompts:
+            Validate Password Plugin: Choose a level (low/medium/high) based on your requirements.
+            Set Root Password: Set a strong password.
+            Remove Anonymous Users: Select Yes.
+            Disallow Remote Root Login: Select Yes.
+            Remove Test Database: Select Yes.
+            Reload Privilege Tables: Select Yes.
+
+Step 3: Create Users and Assign Specific Privileges
+
+    Log into MySQL as Root:
+
+sudo mysql -u root -p  
+
+Create Databases:
+
+    Create two separate databases for each user:
+
+    CREATE DATABASE marydb;  
+    CREATE DATABASE johndb;  
+
+Create Users:
+
+    Create user mary and assign a password:
+
+CREATE USER 'mary'@'localhost' IDENTIFIED BY 'marypassword';  
+
+Create user john and assign a password:
+
+    CREATE USER 'john'@'localhost' IDENTIFIED BY 'johnpassword';  
+
+Grant Privileges to Users:
+
+    Grant mary access only to marydb:
+
+GRANT ALL PRIVILEGES ON marydb.* TO 'mary'@'localhost';  
+
+Grant john access only to johndb:
+
+    GRANT ALL PRIVILEGES ON johndb.* TO 'john'@'localhost';  
+
+Apply Changes to Privileges:
+
+FLUSH PRIVILEGES;  
+
+Test User Privileges:
+
+    Log in as mary and test access to marydb:
+
+mysql -u mary -p  
+
+SHOW DATABASES;  
+USE marydb;  
+
+    Attempt to access johndb (should fail):
+
+        USE johndb;  
+
+    Repeat for john to ensure proper isolation.
+
+Exit the MySQL Prompt:
+
+EXIT;  
+
+Verification and Documentation
+
+    Verify Service:
+        Run the following command to confirm MySQL is active:
+
+    sudo systemctl status mysql  
+
+Test User Roles:
+
+    Log in as each user and confirm they can only access their respective databases.
+
+Document Results:
+
+    Record database creation, user creation, and privilege assignment steps.
+    Include screenshots or logs showing successful isolation of user access and secured installation steps.
+
+
+Step 1: Install PHP and Necessary Modules
+
+    Update Package Repository:
+
+sudo apt update  
+
+Install PHP and Required Modules:
+
+sudo apt install php libapache2-mod-php php-mysql -y  
+
+Check PHP Version:
+
+php -v  
+
+    Verify PHP is installed and the version number is displayed.
+
+Restart Apache to Apply Changes:
+
+    sudo systemctl restart apache2  
+
+Step 2: Modify php.ini for Security and Performance
+
+    Locate php.ini File:
+        Typically located at:
+
+    /etc/php/8.1/apache2/php.ini  
+
+    Adjust the path if using a different PHP version.
+
+Edit php.ini File:
+
+sudo nano /etc/php/8.1/apache2/php.ini  
+
+Disable Display of Errors in the Browser:
+
+    Find the line:
+
+display_errors = On  
+
+Change it to:
+
+display_errors = Off  
+
+Ensure error logging is enabled by locating and verifying:
+
+log_errors = On  
+error_log = /var/log/php_errors.log  
+
+Create the log file if it doesn't exist:
+
+    sudo touch /var/log/php_errors.log  
+    sudo chown www-data:www-data /var/log/php_errors.log  
+
+Set Limits for File Uploads and Post Requests:
+
+    Locate and update these lines:
+
+    upload_max_filesize = 10M  
+    post_max_size = 20M  
+
+    Adjust values according to your needs (e.g., 10MB for uploads, 20MB for total post size).
+
+Enable OPcache for Performance:
+
+    Find the following lines and ensure they are enabled:
+
+    opcache.enable=1  
+    opcache.memory_consumption=128  
+    opcache.interned_strings_buffer=8  
+    opcache.max_accelerated_files=10000  
+    opcache.validate_timestamps=1  
+
+Save and Exit:
+
+    Press CTRL+O to save and CTRL+X to exit.
+
+Restart Apache to Apply Changes:
+
+    sudo systemctl restart apache2  
+
+Step 3: Verify PHP Installation
+
+    Create a PHP Info File:
+
+sudo nano /var/www/html/phpinfo.php  
+
+    Add the following content:
+
+    <?php
+    phpinfo();
+    ?>
+
+    Save and exit the editor.
+
+Verify PHP Configuration:
+
+    Open a web browser and navigate to:
+
+    http://<your-server-IP>/phpinfo.php  
+
+    Confirm that the PHP information page is displayed, showing detailed PHP settings, installed modules, and OPcache status.
+
+Remove the PHP Info File for Security:
+
+    sudo rm /var/www/html/phpinfo.php  
+
+Verification and Documentation
+
+    Test PHP Functionality:
+        Write and execute a small PHP script (e.g., simple database query) to confirm PHP works with MySQL.
+
+    Document Changes:
+        Record installation steps and configurations, including changes to php.ini.
+        Include screenshots of the PHP info page and logs showing successful PHP operations.
+
+    Verify Logging:
+        Trigger a PHP error and check the log file at /var/log/php_errors.log to confirm errors are logged instead of displayed in the browser.
+
+
+Step 1: Install PhpMyAdmin and Verify Access
+
+    Install PhpMyAdmin:
+
+sudo apt update  
+sudo apt install phpmyadmin -y  
+
+Configure PhpMyAdmin for Apache:
+
+    During installation, select apache2 when prompted and press ENTER.
+    Configure the PhpMyAdmin database when prompted by choosing Yes.
+    Set a strong password for the phpmyadmin MySQL user during the installation process.
+
+Enable the PhpMyAdmin Configuration:
+
+sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin  
+
+Restart Apache:
+
+sudo systemctl restart apache2  
+
+Verify PhpMyAdmin Installation:
+
+    Open a browser and navigate to:
+
+        http://<your-server-IP>/phpmyadmin  
+
+        Confirm that the PhpMyAdmin login page is displayed.
+
+Step 2: Add Apache Basic Authentication
+
+    Install Apache Utils for htpasswd:
+
+sudo apt install apache2-utils -y  
+
+Create a Password File for Authentication:
+
+    Create a password file to store user credentials:
+
+    sudo htpasswd -c /etc/phpmyadmin/.htpasswd admin  
+
+    Replace admin with your desired username.
+    Enter and confirm the password when prompted.
+
+Configure Apache for Basic Authentication:
+
+    Edit the PhpMyAdmin Apache configuration file:
+
+sudo nano /etc/apache2/conf-available/phpmyadmin.conf  
+
+Add the following block within the <Directory /usr/share/phpmyadmin> section:
+
+    <Directory /usr/share/phpmyadmin>
+        AuthType Basic
+        AuthName "Restricted Access"
+        AuthUserFile /etc/phpmyadmin/.htpasswd
+        Require valid-user
+    </Directory>
+
+Enable the Changes:
+
+    sudo systemctl reload apache2  
+
+Step 3: Verify Access Restriction
+
+    Test Basic Authentication:
+        Navigate to:
+
+        http://<your-server-IP>/phpmyadmin  
+
+        You should be prompted for a username and password.
+        Enter the credentials created in Step 2.2.
+
+    Test PhpMyAdmin Login:
+        After passing basic authentication, the PhpMyAdmin login page should load.
+        Log in using a MySQL user’s credentials (e.g., root or phpmyadmin user).
+
+Step 4: Create Two PhpMyAdmin Users with Limited Privileges
+
+    Log into PhpMyAdmin:
+        Use a browser to navigate to http://<your-server-IP>/phpmyadmin.
+        Log in as the MySQL root user or another admin user.
+
+    Create Databases for New Users:
+        In PhpMyAdmin, go to the SQL tab and run:
+
+        CREATE DATABASE user1db;  
+        CREATE DATABASE user2db;  
+
+    Create New Users with Specific Privileges:
+        Open the Users tab in PhpMyAdmin and click Add User.
+        For user1:
+            Username: user1
+            Host: localhost
+            Password: Set a strong password
+            Database for user: Grant all privileges on user1db
+        Repeat for user2 with access to user2db.
+
+    Verify User Privileges:
+        Log out of PhpMyAdmin and log in as user1.
+        Confirm user1 only has access to user1db.
+        Repeat for user2 to confirm similar restrictions.
+
+Verification and Documentation
+
+    Test Access Control:
+        Confirm that accessing PhpMyAdmin without authentication shows the basic authentication prompt.
+        Verify both levels of authentication (Apache and PhpMyAdmin credentials) are required.
+
+    Document Changes:
+        Record the creation of .htpasswd, Apache configuration changes, and user creation steps.
+        Include screenshots or logs showing:
+            Basic authentication prompt.
+            Successful login into PhpMyAdmin.
+            Restricted access for user1 and user2.
+
+
+Step 1: Install and Configure Necessary Apache Modules
+
+    Install Required Apache Modules:
+
+sudo apt update  
+sudo apt install apache2-utils -y  
+sudo a2enmod ldap authnz_ldap  
+
+Restart Apache to Enable the Modules:
+
+sudo systemctl restart apache2  
+
+Verify Module Activation:
+
+    Run the following command to confirm ldap and authnz_ldap are enabled:
+
+    apache2ctl -M | grep ldap  
+
+    Ensure authnz_ldap_module and ldap_module appear in the output.
+
+Edit the Apache Configuration File:
+
+    Open the default configuration file:
+
+sudo nano /etc/apache2/sites-available/000-default.conf  
+
+Add the following inside the <VirtualHost *:80> block to configure LDAP authentication:
+
+        <Directory /var/www/html/users>
+            AuthType Basic
+            AuthName "LDAP Authentication"
+            AuthBasicProvider ldap
+            AuthLDAPURL "ldap://<LDAP_SERVER_IP_OR_DOMAIN>/dc=example,dc=com?uid?sub?(objectClass=person)"
+            AuthLDAPBindDN "cn=admin,dc=example,dc=com"
+            AuthLDAPBindPassword "<LDAP_ADMIN_PASSWORD>"
+            Require valid-user
+        </Directory>
+
+            Replace <LDAP_SERVER_IP_OR_DOMAIN> with the LDAP server's IP or domain.
+            Replace dc=example,dc=com with your LDAP domain configuration.
+            Replace cn=admin,dc=example,dc=com and <LDAP_ADMIN_PASSWORD> with the LDAP admin credentials.
+
+    Save and Exit:
+        Press CTRL+O to save and CTRL+X to exit.
+
+Step 2: Create Individual Web Shares for LDAP Users
+
+    Create User Directories:
+        For each LDAP user, create a directory:
+
+    sudo mkdir -p /var/www/html/users/<username>
+
+        Replace <username> with the LDAP username (e.g., john).
+    Repeat for all LDAP users.
+
+Set Permissions for Each Directory:
+
+    Assign ownership of each directory to the Apache user:
+
+    sudo chown -R www-data:www-data /var/www/html/users/<username>  
+
+Restrict Access Between Users:
+
+    Ensure that only the Apache process can access these directories:
+
+        sudo chmod 750 /var/www/html/users/<username>  
+
+Step 3: Configure Apache to Authenticate LDAP Users
+
+    Create a Separate Configuration for Each User:
+        For each user, create a specific Apache configuration file:
+
+sudo nano /etc/apache2/sites-available/<username>.conf  
+
+Add the following:
+
+    <Directory /var/www/html/users/<username>>
+        AuthType Basic
+        AuthName "LDAP Authentication"
+        AuthBasicProvider ldap
+        AuthLDAPURL "ldap://<LDAP_SERVER_IP_OR_DOMAIN>/dc=example,dc=com?uid?sub?(objectClass=person)"
+        AuthLDAPBindDN "cn=admin,dc=example,dc=com"
+        AuthLDAPBindPassword "<LDAP_ADMIN_PASSWORD>"
+        Require ldap-user <username>
+    </Directory>
+
+Enable the User-Specific Configuration:
+
+sudo a2ensite <username>.conf  
+
+Restart Apache to Apply Changes:
+
+    sudo systemctl restart apache2  
+
+Step 4: Create Personalized PHP Scripts
+
+    Create a PHP File for Each User:
+        In each user’s directory, create a index.php file:
+
+sudo nano /var/www/html/users/<username>/index.php  
+
+Add the following content:
+
+    <?php
+    $username = getenv('REMOTE_USER');
+    echo "Hello, " . htmlspecialchars($username) . "!";
+    ?>
+
+Set Proper Permissions:
+
+    sudo chmod 644 /var/www/html/users/<username>/index.php  
+
+Step 5: Test and Verify LDAP Authentication
+
+    Access the User Directory via Browser:
+        Navigate to:
+
+    http://<your-server-IP>/users/<username>  
+
+    Enter valid LDAP credentials when prompted.
+    Confirm the personalized greeting (e.g., “Hello, john”).
+
+Test Directory Restrictions:
+
+    Attempt to access another user's directory using a different LDAP user’s credentials.
+    Confirm that access is denied.
+
+Verify Logs:
+
+    Check Apache logs for authentication and access attempts:
+
+        sudo tail -f /var/log/apache2/access.log /var/log/apache2/error.log  
+
+Documentation and Evidence
+
+    Record Steps:
+        Document the setup process, including LDAP configuration details, directory creation, and Apache configurations.
+
+    Capture Screenshots:
+        Include screenshots of:
+            The browser prompt for LDAP authentication.
+            Successful personalized greetings for each user.
+            Denied access attempts to unauthorized directories.
+
+    Verify Security:
+        Test and confirm that only authenticated users can access their specific directories.
+
+Step 1: Set Up Regular Backups
+1.1 Install Required Tools
+
+    Ensure rsync is installed:
+
+sudo apt update  
+sudo apt install rsync -y  
+
+Install cron if not already installed:
+
+    sudo apt install cron -y  
+
+1.2 Create Backup Directories
+
+    Create local directories to store backups:
+
+    sudo mkdir -p /backups/web  
+    sudo mkdir -p /backups/mysql  
+
+1.3 Backup Directories
+
+    Configure rsync commands for the directories:
+
+        Web server files (/var/www/html/):
+
+sudo rsync -a --delete /var/www/html/ /backups/web/  
+
+MySQL configuration (/etc/mysql/):
+
+sudo rsync -a --delete /etc/mysql/ /backups/mysql/config/  
+
+MySQL databases (/var/lib/mysql/):
+
+        sudo rsync -a --delete /var/lib/mysql/ /backups/mysql/data/  
+
+Step 2: Configure Rsync for Remote Host Backup
+
+    Set Up SSH Key for Authentication:
+        Generate an SSH key (if not already created):
+
+ssh-keygen -t rsa -b 2048  
+
+Copy the public key to the remote backup host:
+
+    ssh-copy-id user@<remote-host-ip>  
+
+Modify Rsync Commands for Remote Backup:
+
+    Update rsync commands to transfer files to the remote host:
+
+        Web files:
+
+rsync -a --delete /var/www/html/ user@<remote-host-ip>:/remote-backups/web/  
+
+MySQL configurations:
+
+rsync -a --delete /etc/mysql/ user@<remote-host-ip>:/remote-backups/mysql/config/  
+
+MySQL databases:
+
+            rsync -a --delete /var/lib/mysql/ user@<remote-host-ip>:/remote-backups/mysql/data/  
+
+Step 3: Automate Backups Using Cron
+
+    Edit Cron Jobs:
+
+sudo crontab -e  
+
+Add the Following Cron Entries:
+
+    Daily backup of web files at 3 AM:
+
+0 3 * * * rsync -a --delete /var/www/html/ /backups/web/ && rsync -a --delete /backups/web/ user@<remote-host-ip>:/remote-backups/web/  
+
+Weekly backup of MySQL databases and configuration every Sunday at 4 AM:
+
+    0 4 * * 0 rsync -a --delete /etc/mysql/ /backups/mysql/config/ && rsync -a --delete /backups/mysql/config/ user@<remote-host-ip>:/remote-backups/mysql/config/  
+    0 4 * * 0 rsync -a --delete /var/lib/mysql/ /backups/mysql/data/ && rsync -a --delete /backups/mysql/data/ user@<remote-host-ip>:/remote-backups/mysql/data/  
+
+Save and Exit:
+
+    Save the cron configuration and exit the editor.
+
+Verify Cron Jobs:
+
+    List all active cron jobs to confirm:
+
+        sudo crontab -l  
+
+Step 4: Implement Data Integrity Checks
+4.1 Generate MD5 Checksums
+
+    Calculate MD5 Hashes for Local Backups:
+        Generate MD5 checksums for local files:
+
+    find /backups/ -type f -exec md5sum {} \; > /backups/md5_local.txt  
+
+Generate MD5 Hashes for Remote Backups:
+
+    Connect to the remote host and generate checksums:
+
+        ssh user@<remote-host-ip> "find /remote-backups/ -type f -exec md5sum {} \;" > /backups/md5_remote.txt  
+
+4.2 Compare MD5 Checksums
+
+    Use diff to compare the checksums:
+
+    diff /backups/md5_local.txt /backups/md5_remote.txt  
+
+    If there are no differences, the backup integrity is confirmed.
+
+Step 5: Test and Verify Backup and Restore
+
+    Manually Trigger Backups:
+        Run the daily and weekly backup commands manually:
+
+    rsync -a --delete /var/www/html/ /backups/web/  
+    rsync -a --delete /etc/mysql/ /backups/mysql/config/  
+    rsync -a --delete /var/lib/mysql/ /backups/mysql/data/  
+
+Test Restore Process:
+
+    Restore files from backups:
+
+    rsync -a /backups/web/ /var/www/html/  
+    rsync -a /backups/mysql/config/ /etc/mysql/  
+    rsync -a /backups/mysql/data/ /var/lib/mysql/  
+
+Check Restored Data:
+
+    Verify the restored web files and MySQL database functionality.
+
+Monitor Logs:
+
+    Check rsync logs for successful transfers:
+
+        sudo tail -f /var/log/syslog  
+
+Documentation
+
+    Record:
+        The backup directory paths and cron schedules.
+        Commands used for rsync and integrity checks.
+        Test results for both backup and restore processes.
+    Include evidence of:
+        Cron execution (via logs).
+        Integrity check results (diff output).
+
+Step 1: Enable Detailed Apache Logging
+
+    Edit the Apache Configuration File:
+        Open the Apache configuration file for editing:
+
+    sudo nano /etc/apache2/apache2.conf  
+
+Adjust Log Level:
+
+    Locate the LogLevel directive and change it to info or debug for detailed logging:
+
+    LogLevel info  
+
+Customize Log Format:
+
+    Ensure the combined log format captures all access details:
+
+LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined  
+
+Verify that the CustomLog directive is set to use the combined format:
+
+    CustomLog /var/log/apache2/access.log combined  
+
+Enable Error Logging:
+
+    Ensure the ErrorLog directive points to the correct log file:
+
+    ErrorLog /var/log/apache2/error.log  
+
+Save and Restart Apache:
+
+    Save the changes and exit the editor (CTRL+O, CTRL+X), then restart Apache:
+
+    sudo systemctl restart apache2  
+
+Verify Logs:
+
+    Check the access and error logs:
+
+        tail -f /var/log/apache2/access.log /var/log/apache2/error.log  
+
+Step 2: Install and Configure Monitoring Tools
+2.1 Install Logwatch
+
+    Install Logwatch:
+
+sudo apt update  
+sudo apt install logwatch -y  
+
+Generate Reports:
+
+    Run Logwatch to generate a detailed report:
+
+    sudo logwatch --detail High --mailto root --service apache --range today  
+
+Schedule Daily Reports:
+
+    Open the cron configuration file:
+
+sudo nano /etc/cron.daily/00logwatch  
+
+Ensure the following command is included:
+
+        /usr/sbin/logwatch --output mail --mailto root --detail High  
+
+2.2 Install and Configure GoAccess
+
+    Install GoAccess:
+
+sudo apt install goaccess -y  
+
+Analyze Apache Logs:
+
+    Generate a real-time report:
+
+    sudo goaccess /var/log/apache2/access.log -o /var/www/html/report.html --log-format=COMBINED  
+
+Automate Reports:
+
+    Add the following cron job to generate a daily report:
+
+crontab -e  
+
+    Add the entry:
+
+        0 5 * * * goaccess /var/log/apache2/access.log -o /var/www/html/report.html --log-format=COMBINED  
+
+Access the Report:
+
+    View the generated HTML report at:
+
+        http://<your-server-IP>/report.html  
+
+Step 3: Set Up Fail2Ban for Apache Security
+
+    Install Fail2Ban:
+
+sudo apt install fail2ban -y  
+
+Configure Fail2Ban for Apache:
+
+    Create a local configuration file:
+
+sudo nano /etc/fail2ban/jail.local  
+
+Add the following configuration:
+
+    [apache-auth]
+    enabled  = true
+    port     = http,https
+    filter   = apache-auth
+    logpath  = /var/log/apache2/error.log
+    maxretry = 5
+    bantime  = 3600
+
+    [apache-phpmyadmin]
+    enabled  = true
+    port     = http,https
+    filter   = apache-phpmyadmin
+    logpath  = /var/log/apache2/access.log
+    maxretry = 3
+    bantime  = 3600
+
+Create Custom Filters:
+
+    Create a filter for PhpMyAdmin brute force attempts:
+
+sudo nano /etc/fail2ban/filter.d/apache-phpmyadmin.conf  
+
+Add the following content:
+
+    [Definition]
+    failregex = ^<HOST> -.*POST.*phpmyadmin.*
+    ignoreregex =  
+
+Restart Fail2Ban:
+
+    Apply the configuration changes:
+
+    sudo systemctl restart fail2ban  
+
+Verify Fail2Ban Status:
+
+    Check if the jail is active:
+
+        sudo fail2ban-client status  
+        sudo fail2ban-client status apache-phpmyadmin  
+
+Step 4: Test and Verify the Setup
+
+    Test Logging:
+        Access the server from a browser and intentionally generate both successful and failed requests.
+        Check the logs for detailed entries:
+
+    tail -f /var/log/apache2/access.log /var/log/apache2/error.log  
+
+Test GoAccess Reports:
+
+    Visit the generated HTML report and verify traffic statistics and error logs.
+
+Test Fail2Ban:
+
+    Intentionally fail login attempts to PhpMyAdmin and verify the IP is banned:
+
+    sudo fail2ban-client status apache-phpmyadmin  
+
+Monitor Logs:
+
+    Check the Fail2Ban log for actions taken:
+
+        sudo tail -f /var/log/fail2ban.log  
+
+Documentation
+
+    Record Evidence:
+        Include examples of detailed log entries.
+        Capture screenshots of GoAccess reports and banned IP lists from Fail2Ban.
+    Logs to Include:
+        Apache access and error logs.
+        Fail2Ban logs showing banned IPs.
+    Verification:
+        Test cases confirming that attacks are logged, reported, and mitigated.
+
